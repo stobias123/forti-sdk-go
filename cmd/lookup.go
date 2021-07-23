@@ -16,11 +16,12 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"github.com/fatih/color"
 	"github.com/fortinetdev/forti-sdk-go/fortios/sdkcore"
 	"github.com/spf13/cobra"
+	"log"
+	"strconv"
 )
-//x1r7y6gywG06q9mfjtyzrqmQk8b9HG
 
 // lookupCmd represents the lookup command
 var lookupCmd = &cobra.Command{
@@ -40,30 +41,62 @@ to quickly create a Cobra application.`,
 			Insecure: &insecure,
 		}
 		var fClient FortiClient
+	Run: lookupPolicy,
+}
 
-		err := CreateFortiOSClient(&fClient, config)
-		if err != nil {
-			fmt.Print(err)
-		}
-		p := &forticlient.PolicyLookupRequest{
-			Destination:     "",
-			DestPort:        "",
-			IPVersion:       "",
-			Protocol:        "",
-			SourceIP:        "",
-			SourceInterface: "",
-		}
-		fmt.Print(p)
-		fClient.Client.ReadFirewallPolicyLookup(p)
-	},
+var trafficType string
+var source string
+var sourcePort int
+var sourceInterface string
+var destination string
+var destinationPort int
+
+func lookupPolicy(cmd *cobra.Command, args []string) {
+	fClient := getClient()
+	p := &forticlient.PolicyLookupRequest{
+		Destination:     destination,
+		DestPort:        destinationPort,
+		IPVersion:       "ipv4",
+		Protocol:        "TCP",
+		SourceIP:        source,
+		SourceInterface: sourceInterface,
+	}
+
+	policyMatch, err := fClient.Client.ReadFirewallPolicyLookup(p)
+	policyObj, err := fClient.Client.ReadFirewallSecurityPolicy1(strconv.Itoa(policyMatch.PolicyID))
+	//policyObj := &forticlient.JSONFirewallSecurityPolicy{}
+	if err != nil {
+		log.Fatalln(err)
+	}
+	printPolicy(policyMatch,policyObj)
+}
+
+func printPolicy(policyMatch *forticlient.PolicyLookupResult,policyObj *forticlient.JSONFirewallSecurityPolicy) error {
+	if ! policyMatch.Success {
+		color.Red("No Match found. Implicit Deny will be used!")
+	}else {
+		color.Green("Match found! Policy ID: %d",policyMatch.PolicyID)
+		color.White("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s","Name","Srcintf", "Srcaddr", "Dstintf", "Dstaddr", "ApplicationList", "Action","Nat")
+		color.Yellow("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s",
+			policyObj.Name,
+			policyObj.Srcintf,
+			policyObj.Srcaddr,
+			policyObj.Dstintf,
+			policyObj.Dstaddr,
+			policyObj.ApplicationList,
+			policyObj.Action,
+			policyObj.Nat)
+	}
+
+	return nil
 }
 
 func init() {
-	lookupCmd.Flags().StringP("traffic-type", "t","TCP","Traffic type. Valid Options are: TCP,UDP,SCTP")
-	lookupCmd.Flags().StringP("source","s","","Source IP for the traffic.")
-	lookupCmd.Flags().StringP("source-port","p","","Source Port for the traffic.")
-	lookupCmd.Flags().StringP("dest","d","","Destination IP for the traffic.")
-	lookupCmd.Flags().StringP("dest-port","","","Destination Port for the traffic.")
+	lookupCmd.Flags().StringVarP(&trafficType,"traffic-type", "t","TCP","Traffic type. Valid Options are: TCP,UDP,SCTP")
+	lookupCmd.Flags().StringVarP(&source,"source","s","","Source IP for the traffic.")
+	lookupCmd.Flags().StringVarP(&sourceInterface,"source-interface","","port1","Source Interface for the traffic.")
+	lookupCmd.Flags().StringVarP(&destination,"dest","d","","Destination IP for the traffic.")
+	lookupCmd.Flags().IntVarP(&destinationPort,"dest-port","p",80,"Destination Port for the traffic.")
 	lookupCmd.MarkFlagRequired("source")
 	lookupCmd.MarkFlagRequired("dest")
 	lookupCmd.MarkFlagRequired("dest-port")

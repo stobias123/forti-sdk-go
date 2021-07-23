@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"strconv"
 )
 
 type PolicyLookupResponse struct {
@@ -26,7 +27,7 @@ type JSONPolicyLookupOutput struct {
 
 type PolicyLookupRequest struct {
 	Destination     string `json:"dest"`
-	DestPort        string `json:"destport"`
+	DestPort        int `json:"destport"`
 	IPVersion       string `json:"ipVersion"`
 	Protocol        string `json:"protocol"`
 	SourceIP        string `json:"sourceip"`
@@ -38,10 +39,10 @@ func (c *FortiSDKClient) ReadFirewallPolicyLookup(params *PolicyLookupRequest) (
 
 	path := "/api/v2/monitor/firewall/policy-lookup"
 	path += "?dest=" + EscapeURLString(params.Destination)
-	path += "&destport=" + EscapeURLString(params.DestPort)
+	path += "&destport=" + EscapeURLString(strconv.Itoa(params.DestPort))
 	path += "&ipVersion=ipv4&ipv6=false&protocol=tcp&sourceip=" + EscapeURLString(params.SourceIP)
 	path += "&srcintf=" + EscapeURLString(params.SourceInterface)
-
+	//fmt.Println(path)
 	lookupResult = &PolicyLookupResult{}
 
 	if err != nil {
@@ -63,7 +64,7 @@ func (c *FortiSDKClient) ReadFirewallPolicyLookup(params *PolicyLookupRequest) (
 		err = fmt.Errorf("cannot get response body %s", err)
 		return
 	}
-	log.Printf("FOS-fortios reading response: %s", string(body))
+	//log.Printf("FOS-fortios reading response: %s", string(body))
 
 	//var result map[string]interface{}
 	var result JSONPolicyLookupOutput
