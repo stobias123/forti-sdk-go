@@ -17,6 +17,11 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/fatih/color"
+	forticlient "github.com/fortinetdev/forti-sdk-go/fortios/sdkcore"
+	"log"
+	"os"
+	"text/tabwriter"
 
 	"github.com/spf13/cobra"
 )
@@ -32,13 +37,47 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("policy called")
+
 	},
+}
+
+var policyListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List Security Policies",
+	Long: `A longer description that spans multiple lines and likely contains examples
+and usage of using your command. For example:
+
+Cobra is a CLI library for Go that empowers applications.
+This application is a tool to generate the needed files
+to quickly create a Cobra application.`,
+	Run: func(cmd *cobra.Command, args []string) {
+		fClient := getClient()
+		results, err := fClient.Client.GetSecurityPolicyList("root")
+		if err != nil {
+			color.Red("Something went wrong")
+			log.Fatalln(err)
+		}
+		printPolicies(results)
+	},
+}
+
+func printPolicies(policies []forticlient.JSONSecurityPolicyItem) error {
+	writer := tabwriter.NewWriter(os.Stdout, 10, 8, 1, '\t', tabwriter.AlignRight)
+	fmt.Fprintln(writer, "PolicyID\tPolicyName\tPolicyAction")
+	for _, obj := range policies {
+		fmt.Fprintf(writer, "%s\t%s\t%s\t\n",
+			obj.PolicyID,
+			obj.Name,
+			obj.Action)
+	}
+	writer.Flush()
+	fmt.Printf("\n")
+	return nil
 }
 
 func init() {
 	rootCmd.AddCommand(policyCmd)
-
+	policyCmd.AddCommand(policyListCmd)
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command

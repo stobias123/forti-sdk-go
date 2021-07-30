@@ -21,6 +21,8 @@ import (
 	forticlient "github.com/fortinetdev/forti-sdk-go/fortios/sdkcore"
 	"github.com/spf13/cobra"
 	"log"
+	"os"
+	"text/tabwriter"
 )
 
 // addressObjectCmd represents the addressObject command
@@ -55,7 +57,8 @@ var addressObjectListCmd = &cobra.Command{
 }
 
 func printObjects(policyMatch []forticlient.JSONFirewallObjectAddress) error {
-	color.White("%s\t%s\t%s\t%s\t%s\t%s\t%s","Name","Interface","Type", "StartIP", "EndIP", "Subnet", "FQDN")
+	writer := tabwriter.NewWriter(os.Stdout, 10, 8, 1, '\t', tabwriter.AlignRight)
+	fmt.Fprintln(writer, "Name\tInterface\tType\tSubnet\tFQDN")
 	for _, obj := range policyMatch {
 		//startIp := "nil"
 		//endIp := "nil"
@@ -63,13 +66,9 @@ func printObjects(policyMatch []forticlient.JSONFirewallObjectAddress) error {
 		fqdn := "nil"
 		associatedInf := "nil"
 
-		returnStr := ""
-		returnStr += obj.Name + "\t"
-
 		if obj.JSONFirewallObjectAddressFqdn != nil {
 			fqdn = obj.Fqdn
 		}
-
 		/* I genuinely don't know when this is.. Range?
 		if obj.Type == "range???" {
 			startIp = obj.StartIP
@@ -81,13 +80,15 @@ func printObjects(policyMatch []forticlient.JSONFirewallObjectAddress) error {
 		if obj.Type == "fqdn" {
 			fqdn = obj.Fqdn
 		}
-		returnStr += fmt.Sprintf("%s\t%s\t%s\t%s\t",
+		fmt.Fprintf(writer, "%s\t%s\t%s\t%s\t%s\n",
+			obj.Name,
 			obj.Type,
 			associatedInf,
 			subnet,
 			fqdn)
-		color.White(returnStr)
 	}
+	writer.Flush()
+	fmt.Printf("\n")
 	return nil
 }
 func init() {
