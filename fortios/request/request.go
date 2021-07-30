@@ -211,7 +211,6 @@ func buildURL(r *Request) string {
 
 	u += "access_token="
 	u += r.Config.Auth.Token
-	fmt.Println(u)
 	return u
 }
 
