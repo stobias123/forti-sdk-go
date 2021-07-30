@@ -1,0 +1,35 @@
+# .goreleaser.yml
+builds:
+  - # build1
+    id: fortios
+    binary: fortios
+    main: ./main.go
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+    goarm:
+      - 7
+archives:
+- # Archive
+  format: binary
+  replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    amd64: x86_64
+- # Archive
+  id: homebrew
+  format: zip
+  replacements:
+    darwin: macOS
+brews:
+  - 
+    tap:
+      owner: foobar-software
+      name: homebrew-tap
+    folder: Formula
